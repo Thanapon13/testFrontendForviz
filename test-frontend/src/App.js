@@ -1,12 +1,15 @@
 import dayjs from "dayjs";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { HiChevronRight, HiChevronLeft } from "react-icons/hi";
+import { RiDeleteBinLine } from "react-icons/ri";
 import { generateDate, months, days } from "./util/calendar";
 import eventData from "../src/mocData/eventData.json";
 import Modal from "./components/Modal";
+import ModalConfirmSave from "./components/ModalConfirmSave";
 
 function App() {
   const [open, setOpen] = useState(false);
+  const [openConfirm, setOpenConfirm] = useState(false);
 
   const [input, setInput] = useState({
     topic: ""
@@ -14,7 +17,9 @@ function App() {
 
   const storedEventData = JSON.parse(localStorage.getItem("eventData")) || [];
   const [eventDatas, setEventDatas] = useState(storedEventData);
-  console.log("eventDatas:", eventDatas);
+  // console.log("eventDatas:", eventDatas);
+  const [eventDataId, setEventDataId] = useState("");
+  // console.log("eventDataId:", eventDataId);
 
   useEffect(() => {
     localStorage.setItem("eventData", JSON.stringify(eventDatas));
@@ -32,6 +37,7 @@ function App() {
   const [selectedMonth, setSelectedMonth] = useState(dayjs().format("MMMM"));
   // console.log("selectedMonth:", selectedMonth);
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  // console.log("selectedYear:", selectedYear);
   const [selectedDay, setSelectedDay] = useState(null);
   // console.log("selectedDay:", selectedDay);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -46,8 +52,7 @@ function App() {
     }
   };
 
-  // console.log("selectedMonth:", selectedMonth);
-
+  console.log("selectedMonth:", selectedMonth);
   const handleMonthClick = month => {
     // console.log("month;", month);
     setSelectedMonth(month);
@@ -67,7 +72,7 @@ function App() {
       e.preventDefault();
 
       const newEvent = {
-        id: eventData.length + 1,
+        id: Math.max(...eventDatas.map(el => el.id), 0) + 1,
         day: selectedDay,
         date: selectedDate,
         topic: input.topic,
@@ -88,6 +93,24 @@ function App() {
       setOpen(false);
     } catch (err) {
       console.log(err);
+    }
+  };
+
+  const handleClickDeleteEvent = async eventId => {
+    try {
+      // console.log("eventId:", eventId);
+
+      const updatedEvents = eventDatas.filter(event => event.id !== eventId);
+
+      // console.log("updatedEvents:", updatedEvents);
+
+      setEventDatas(updatedEvents);
+
+      localStorage.setItem("eventData", JSON.stringify(updatedEvents));
+
+      setOpenConfirm(false);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -152,7 +175,13 @@ function App() {
 
           <div className="grid grid-cols-7">
             {generateCalendarData().map(({ date }, index) => {
-              // console.log("date:", date);
+              const isEventDate = eventDatas.some(
+                event =>
+                  event.day === date.format("ddd") &&
+                  event.date === date.date() &&
+                  event.month.toLowerCase() === selectedMonth.toLowerCase() &&
+                  event.year === selectedYear
+              );
               return (
                 <div
                   key={index}
@@ -160,10 +189,16 @@ function App() {
                 >
                   <button
                     onClick={() => {
-                      handleClick(date.format("ddd"), date.date());
-                      setOpen(!open);
+                      if (!isEventDate) {
+                        handleClick(date.format("ddd"), date.date());
+                        setOpen(!open);
+                      }
                     }}
-                    className="h-10 w-10 rounded-full grid place-content-center hover:bg-black hover:text-white cursor-pointer select-none"
+                    className={`h-10 w-10 rounded-full grid place-content-center  ${
+                      isEventDate
+                        ? "bg-red-200 text-white"
+                        : "hover:bg-black hover:text-white"
+                    }  cursor-pointer select-none `}
                   >
                     <h1>{date.date()}</h1>
                   </button>
@@ -173,24 +208,59 @@ function App() {
           </div>
         </div>
 
-        <div className="w-2/5">
-          <div className="flex items-center justify-start gap-10 ml-4">
-            <div>sss</div>
+        <ol className="w-2/5 relative border-l border-gray-200 dark:border-gray-700 ml-10 mt-40">
+          <div className="flex flex-col justify-center">
+            {eventDatas.some(
+              el => selectedMonth === el.month && selectedYear === el.year
+            ) ? (
+              eventDatas.map(
+                (el, idx) =>
+                  selectedMonth === el.month &&
+                  selectedYear === el.year && (
+                    <li className="mt-4 ml-6" key={idx}>
+                      <span className="absolute flex items-center justify-center w-3 h-3 bg-red-200 rounded-full -left-1.5"></span>
 
-            <div>
-              {eventDatas?.map((el, idx) => (
-                <div key={idx}>
-                  <p className="text-lg text-gray-500">
-                    {el?.month} {el?.date} {el?.year}
-                  </p>
-                  <p className="text-lg text-gray-500 font-bolad">
-                    {el?.topic}
-                  </p>
-                </div>
-              ))}
-            </div>
+                      <div key={idx}>
+                        <div>
+                          <p className="text-lg text-gray-500">
+                            {el?.month} {el?.date} {el?.year}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-start gap-6">
+                          <p className="text-lg text-gray-500 font-bold">
+                            {el?.topic}
+                          </p>
+                          <button
+                            className="text-lg hover:text-red-600"
+                            onClick={() => {
+                              setOpenConfirm(!openConfirm);
+                              setEventDataId(el?.id);
+                            }}
+                          >
+                            <RiDeleteBinLine />
+                          </button>
+
+                          {openConfirm && (
+                            <ModalConfirmSave
+                              onClose={() => setOpenConfirm(false)}
+                              onSave={() => handleClickDeleteEvent(eventDataId)}
+                              header={`Delete Event for : ${el?.day} ${el?.date} ${el?.month} ${el?.year}`}
+                              text='Do you want to "Delete Event" ?'
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </li>
+                  )
+              )
+            ) : (
+              <div className="text-lg text-gray-500 mt-4 ml-6">
+                No events for this month.
+              </div>
+            )}
           </div>
-        </div>
+        </ol>
       </div>
 
       {open && (
