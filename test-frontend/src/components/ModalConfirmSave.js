@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { IoIosClose } from "react-icons/io";
 
-const ModalConfirmSave = ({ onClose, onSave, text, header }) => {
+const ModalConfirmSave = ({ onClose, onSave, text, header, topic }) => {
   const handleClose = e => {
     if (e.target.id === "wrapper") {
       onClose();
@@ -12,10 +12,10 @@ const ModalConfirmSave = ({ onClose, onSave, text, header }) => {
     <>
       <div
         id="wrapper"
-        className="modal fixed inset-0 bg-black bg-opacity-25 blackdrop-blur-sm flex justify-center items-center"
+        className=" modal fixed inset-0 bg-black bg-opacity-25 blackdrop-blur-sm flex justify-center items-center "
         onClick={handleClose}
       >
-        <div className="overflow-y-auto scrollbar cursor-default">
+        <div className=" overflow-y-auto scrollbar cursor-default">
           <div className={`mx-auto min-w-[30em]`}>
             <div className="bg-white rounded min-w-[50%]">
               <div className="flex justify-between border-grey-300  p-4">
@@ -33,7 +33,10 @@ const ModalConfirmSave = ({ onClose, onSave, text, header }) => {
                 </button>
               </div>
 
-              <div className="min-w-[50%] px-4 py-3">{text}</div>
+              <div className="min-w-[50%] px-4 py-3 flex gap-1">
+                <p>{text}</p>
+                <p className=" font-bold">{topic}</p>
+              </div>
 
               <div className="flex justify-end items-center border-grey-300 p-4">
                 <button

@@ -1,14 +1,18 @@
 import dayjs from "dayjs";
 import React, { useEffect, useState } from "react";
 import { HiChevronRight, HiChevronLeft } from "react-icons/hi";
+import { GiHamburgerMenu } from "react-icons/gi";
 import { RiDeleteBinLine } from "react-icons/ri";
+import { FaStar } from "react-icons/fa";
 import { generateDate, months, days } from "./util/calendar";
 import eventData from "../src/mocData/eventData.json";
 import Modal from "./components/Modal";
 import ModalConfirmSave from "./components/ModalConfirmSave";
+import { formatTime } from "./util/formatTime";
 
 function App() {
   const [open, setOpen] = useState(false);
+  const [isMenuOpen, setMenuOpen] = useState(false);
   const [openConfirm, setOpenConfirm] = useState(false);
 
   const [input, setInput] = useState({
@@ -42,6 +46,8 @@ function App() {
   // console.log("selectedDay:", selectedDay);
   const [selectedDate, setSelectedDate] = useState(null);
   // console.log("selectedDate:", selectedDate);
+  const [selectedPriority, setSelectedPriority] = useState("");
+  // console.log("selectedPriority:", selectedPriority);
 
   const handleYearChange = increment => {
     const currentIndex = years.indexOf(selectedYear);
@@ -52,7 +58,7 @@ function App() {
     }
   };
 
-  console.log("selectedMonth:", selectedMonth);
+  // SELECTED MONTH
   const handleMonthClick = month => {
     // console.log("month;", month);
     setSelectedMonth(month);
@@ -62,11 +68,13 @@ function App() {
     return generateDate(months.indexOf(selectedMonth), parseInt(selectedYear));
   };
 
+  // SELECTED DATE DAY
   const handleClick = (day, date) => {
     setSelectedDay(day);
     setSelectedDate(date);
   };
 
+  // ADD EVENT
   const handleSubmitForm = async e => {
     try {
       e.preventDefault();
@@ -76,9 +84,10 @@ function App() {
         day: selectedDay,
         date: selectedDate,
         topic: input.topic,
-        createDate: "13/06/2000",
         month: selectedMonth,
-        year: selectedYear
+        year: selectedYear,
+        createDate: new Date(),
+        importance: selectedPriority
       };
       // console.log("newEvent:", newEvent);
 
@@ -90,12 +99,14 @@ function App() {
       );
 
       setInput("");
+      setSelectedPriority("");
       setOpen(false);
     } catch (err) {
       console.log(err);
     }
   };
 
+  // DELETE EVENT
   const handleClickDeleteEvent = async eventId => {
     try {
       // console.log("eventId:", eventId);
@@ -115,9 +126,10 @@ function App() {
   };
 
   return (
-    <div className="w-full h-screen flex ">
-      {/* select month */}
-      <div className="w-1/5 flex flex-col items-center gap-10 text-white bg-purple-400">
+    <div className="w-full md:h-screen flex ">
+      {/* from select month */}
+
+      <div className="md:w-1/5 md:flex md:flex-col md:items-center gap-10 text-white bg-purple-400 hidden md:block">
         {/* TOP */}
 
         <div className="text-2xl flex items-center gap-6 mt-6">
@@ -152,12 +164,60 @@ function App() {
         </div>
       </div>
 
-      <div className="w-full flex ">
-        <div className="w-4/5 bg-violet-50 flex flex-col justify-center shadow-xl shadow-indigo-500/40 ">
-          <div className="mb-8">
+      <div className="w-full md:flex w-full">
+        {/* from calendar */}
+        <div className="md:w-4/5 bg-violet-50 flex flex-col justify-center shadow-xl shadow-indigo-500/40">
+          <div className="mb-8 ">
+            <button
+              className="relative text-2xl text-back md:hidden p-4"
+              onClick={() => setMenuOpen(!isMenuOpen)}
+            >
+              <GiHamburgerMenu />
+            </button>
+
             <h1 className="text-3xl text-gray-500 text-center">
               {selectedMonth}
             </h1>
+
+            {isMenuOpen && (
+              <div className="absolute left-2 font-normal bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700 dark:divide-gray-600">
+                <ul className="text-sm text-gray-700 dark:text-gray-200">
+                  <div className="w-full z-10 text-lg flex items-center justify-center gap-4 bg-purple-400 text-white">
+                    <button onClick={() => handleYearChange(-1)}>
+                      <i className="hover:text-slate-100">
+                        <HiChevronLeft />
+                      </i>
+                    </button>
+
+                    <p>{selectedYear}</p>
+
+                    <button onClick={() => handleYearChange(1)}>
+                      <i className="hover:text-slate-100">
+                        <HiChevronRight />
+                      </i>
+                    </button>
+                  </div>
+
+                  {months.map((el, idx) => (
+                    <li key={idx}>
+                      <button
+                        className={`w-full block px-4 py-2 bg-purple-400  text-white ${
+                          selectedMonth === el
+                            ? "bg-purple-500 hover:bg-purple-500"
+                            : ""
+                        } `}
+                        onClick={() => {
+                          handleMonthClick(el);
+                          setMenuOpen(false);
+                        }}
+                      >
+                        {el}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-7">
@@ -208,55 +268,74 @@ function App() {
           </div>
         </div>
 
-        <ol className="w-2/5 relative border-l border-gray-200 dark:border-gray-700 ml-10 mt-40">
+        {/* from event */}
+        <ol className="md:w-2/5 relative border-l border-gray-200 dark:border-gray-700 ml-10 md:mt-40 mt-20">
           <div className="flex flex-col justify-center">
             {eventDatas.some(
               el => selectedMonth === el.month && selectedYear === el.year
             ) ? (
-              eventDatas.map(
-                (el, idx) =>
-                  selectedMonth === el.month &&
-                  selectedYear === el.year && (
-                    <li className="mt-4 ml-6" key={idx}>
-                      <span className="absolute flex items-center justify-center w-3 h-3 bg-red-200 rounded-full -left-1.5"></span>
+              eventDatas
+                .filter(
+                  el => selectedMonth === el.month && selectedYear === el.year
+                )
+                .sort((a, b) => {
+                  if (a.year !== b.year) return a.year - b.year;
 
-                      <div key={idx}>
-                        <div>
-                          <p className="text-lg text-gray-500">
-                            {el?.month} {el?.date} {el?.year}
-                          </p>
-                        </div>
+                  if (months.indexOf(a.month) !== months.indexOf(b.month)) {
+                    return months.indexOf(a.month) - months.indexOf(b.month);
+                  }
 
-                        <div className="flex items-center justify-start gap-6">
-                          <p className="text-lg text-gray-500 font-bold">
-                            {el?.topic}
-                          </p>
-                          <button
-                            className="text-lg hover:text-red-600"
-                            onClick={() => {
-                              setOpenConfirm(!openConfirm);
-                              setEventDataId(el?.id);
-                            }}
-                          >
-                            <RiDeleteBinLine />
-                          </button>
+                  return a.date - b.date;
+                })
+                .map((el, idx) => (
+                  <li className="mt-4 ml-6" key={idx}>
+                    <span className="absolute flex items-center justify-center w-3 h-3 bg-red-200 rounded-full -left-1.5"></span>
 
-                          {openConfirm && (
-                            <ModalConfirmSave
-                              onClose={() => setOpenConfirm(false)}
-                              onSave={() => handleClickDeleteEvent(eventDataId)}
-                              header={`Delete Event for : ${el?.day} ${el?.date} ${el?.month} ${el?.year}`}
-                              text='Do you want to "Delete Event" ?'
-                            />
-                          )}
-                        </div>
+                    <div key={idx}>
+                      <div className="flex items-center gap-4">
+                        <p className="text-lg text-gray-500">
+                          {el?.month} {el?.date} {el?.year}{" "}
+                          {formatTime(new Date(el?.createDate))}
+                        </p>
+
+                        <i className="text-sm flex text-purple-400">
+                          {Array.from({ length: el.importance }, (_, index) => (
+                            <FaStar key={index} />
+                          ))}
+                        </i>
                       </div>
-                    </li>
-                  )
-              )
+
+                      <div className="flex items-center justify-start gap-6">
+                        <p className="text-lg text-gray-500 font-bold">
+                          {el?.topic}
+                        </p>
+                        <button
+                          className="text-lg hover:text-red-600"
+                          onClick={() => {
+                            setOpenConfirm(!openConfirm);
+                            setEventDataId(el?.id);
+                          }}
+                        >
+                          <RiDeleteBinLine />
+                        </button>
+
+                        {openConfirm && (
+                          <ModalConfirmSave
+                            onClose={() => setOpenConfirm(false)}
+                            onSave={() => handleClickDeleteEvent(eventDataId)}
+                            header={`Delete Event for : ${el?.day} ${el?.date} ${el?.month} ${el?.year} `}
+                            text={`Do you want to Delete Topic :`}
+                            topic={el?.topic}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                ))
             ) : (
               <div className="text-lg text-gray-500 mt-4 ml-6">
-                No events for this month.
+                <p> No events for this month. </p>
+                <p>You can add an event by clicking on the desired date.</p>
               </div>
             )}
           </div>
@@ -289,6 +368,23 @@ function App() {
               </label>
             </div>
 
+            <div className="mb-4">
+              <select
+                className="block py-2.5 px-0 w-full text-sm text-gray-500 bg-transparent border-0 border-b-2 border-gray-200 appearance-none dark:text-gray-400 dark:border-gray-700 focus:outline-none focus:ring-0 focus:border-gray-200 peer"
+                onChange={e => setSelectedPriority(parseInt(e.target.value))}
+                value={selectedPriority || ""}
+              >
+                <option value="" disabled>
+                  Select priority level
+                </option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+              </select>
+            </div>
+
             <div className="flex items-center justify-center gap-6 p-2">
               <button
                 type="submit"
@@ -300,6 +396,7 @@ function App() {
                 onClick={() => {
                   setOpen(false);
                   setInput("");
+                  setSelectedPriority("");
                 }}
                 className="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
               >

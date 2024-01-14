@@ -7,6 +7,9 @@ export const generateDate = (
   const firstDateOfMonth = dayjs().year(year).month(month).startOf("month");
   const lastDateOfMonth = dayjs().year(year).month(month).endOf("month");
 
+  // console.log("firstDateOfMonth:", firstDateOfMonth);
+  // console.log("lastDateOfMonth:", lastDateOfMonth);
+
   const arrayOfDate = [];
 
   // create prefix date
